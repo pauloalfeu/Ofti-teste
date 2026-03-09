@@ -2,8 +2,29 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OptiAgenda — Agenda Cirúrgica</title>
+
+<!-- ══ PWA: Manifest & Theme ══ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- ══ PWA: iOS / Safari ══ -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OptiAgenda">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<!-- ══ PWA: Favicons ══ -->
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+
+<!-- ══ SEO / Social ══ -->
+<meta name="description" content="Agenda cirúrgica e ambulatorial para oftalmologistas — organize pacientes, cirurgias e consultas com facilidade.">
+<meta name="application-name" content="OptiAgenda">
+<meta name="msapplication-TileColor" content="#0d0d0d">
+
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ════════════════════════════════════════
@@ -153,6 +174,53 @@ img, svg, video { max-width: 100%; height: auto; }
 /* ─── LIVE DOT ─── */
 .dot-live { width:8px; height:8px; background:var(--accent); border-radius:50%; display:inline-block; animation:pulse 1.6s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);} }
+
+/* ════════════════════════════════════════
+   PWA — OFFLINE BANNER
+════════════════════════════════════════ */
+#offline-banner {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: var(--warn); color: var(--black);
+  border-bottom: 2px solid var(--border);
+  padding: 8px var(--sp-4);
+  font-family: 'Syne', sans-serif; font-size: var(--fs-xs);
+  font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  text-align: center; animation: slideD .2s ease;
+  gap: var(--sp-2); align-items: center; justify-content: center;
+}
+#offline-banner.show { display: flex; }
+
+/* Push top-nav down when banner is visible */
+body.offline-mode .top-nav { top: 36px; }
+
+/* ════════════════════════════════════════
+   PWA — INSTALL PROMPT BUTTON
+════════════════════════════════════════ */
+#pwa-install-btn {
+  display: none;
+  align-items: center; gap: var(--sp-2);
+  padding: 7px 12px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .62rem;
+  text-transform: uppercase; letter-spacing: .06em;
+  border: 2px solid var(--accent); cursor: pointer;
+  background: var(--accent-lt); color: var(--black);
+  transition: all .12s; white-space: nowrap;
+  animation: fadeInPWA .4s ease .8s both;
+  -webkit-tap-highlight-color: transparent;
+}
+#pwa-install-btn.visible { display: inline-flex; }
+#pwa-install-btn:hover { background: var(--accent); box-shadow: var(--sh-sm); }
+@keyframes fadeInPWA { from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);} }
+
+/* ── iOS safe area padding (notch / home indicator) ── */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+.mob-pad {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+}
 
 /* ════════════════════════════════════════
    TOP NAV
@@ -921,6 +989,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min
 </head>
 <body>
 
+<!-- ════════ PWA: OFFLINE BANNER ════════ -->
+<div id="offline-banner" role="alert" aria-live="polite">
+  📡 &nbsp;Você está offline — dados salvos localmente
+</div>
+
 <!-- ════════ TOP NAV ════════ -->
 <nav class="top-nav">
   <a class="nav-logo" onclick="go('landing')"><span class="logo-dot">●</span>OptiAgenda</a>
@@ -930,6 +1003,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min
     <li><a href="#" id="nl-s" onclick="go('stats')">Estatísticas</a></li>
   </ul>
   <div class="nav-right">
+    <button id="pwa-install-btn" onclick="pwaTriggerInstall()" title="Instalar app na tela inicial" aria-label="Instalar OptiAgenda">
+      ⬇ Instalar
+    </button>
     <span id="btn-login-nav" class="btn btn-sm" onclick="go('login')" style="display:none">Entrar</span>
     <span id="btn-cadastro-nav" class="btn btn-sm btn-primary" onclick="go('cadastro')" style="display:none">Cadastrar</span>
     <div class="avatar" id="avatar-nav" style="display:none" onclick="go('stats')">IS</div>
@@ -2129,6 +2205,159 @@ window.saveAmbulatorio=saveAmbulatorio; window.deleteAmbulatorio=deleteAmbulator
 window.openAddPacModal=openAddPacModal; window.setPacTipo=setPacTipo; window.onPacNome=onPacNome;
 window.savePaciente=savePaciente; window.openEditPac=openEditPac; window.updatePaciente=updatePaciente;
 window.deletePac=deletePac; window.movePac=movePac;
+
+/* ════════════════════════════════════════
+   PWA — PERSISTENCE (localStorage)
+   Salva ambulatórios automaticamente
+════════════════════════════════════════ */
+const LS_KEY_AMBULATORIOS = 'optiagenda_ambulatorios_v1';
+const LS_KEY_USER = 'optiagenda_user_v1';
+
+function persistSave() {
+  try {
+    localStorage.setItem(LS_KEY_AMBULATORIOS, JSON.stringify(ambulatorios));
+  } catch(e) { console.warn('OptiAgenda: falha ao salvar dados', e); }
+}
+
+function persistLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_AMBULATORIOS);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      // Merge: keep demo data only if no saved data exists
+      Object.assign(ambulatorios, loaded);
+    }
+  } catch(e) { console.warn('OptiAgenda: falha ao carregar dados', e); }
+}
+
+function persistSaveUser(user) {
+  try { localStorage.setItem(LS_KEY_USER, JSON.stringify(user)); } catch(e) {}
+}
+
+function persistLoadUser() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_USER);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+// Patch save functions to auto-persist
+const _origSaveAmbul = saveAmbulatorio;
+window.saveAmbulatorio = function() { _origSaveAmbul(); persistSave(); };
+
+const _origDeleteAmbul = deleteAmbulatorio;
+window.deleteAmbulatorio = function(aid, ds) { _origDeleteAmbul(aid, ds); persistSave(); };
+
+const _origSavePac = savePaciente;
+window.savePaciente = function() { _origSavePac(); persistSave(); };
+
+const _origUpdatePac = updatePaciente;
+window.updatePaciente = function() { _origUpdatePac(); persistSave(); };
+
+const _origDeletePac = deletePac;
+window.deletePac = function(aid, ds, pid) { _origDeletePac(aid, ds, pid); persistSave(); };
+
+const _origMovePac = movePac;
+window.movePac = function(aid, ds, pid, dir) { _origMovePac(aid, ds, pid, dir); persistSave(); };
+
+// Patch doLogin to persist user session
+const _origDoLogin = doLogin;
+window.doLogin = function(user) { _origDoLogin(user); persistSaveUser(user); };
+
+// Load persisted data on startup
+persistLoad();
+
+// Auto-restore user session
+(function restoreSession() {
+  const savedUser = persistLoadUser();
+  if (savedUser) {
+    // Silently restore session without running auth pipeline animation
+    currentUser = savedUser;
+    isLoggedIn = true;
+    const av = document.getElementById('avatar-nav');
+    if (av) av.textContent = savedUser.initials;
+    updateNavAuth();
+    toast(`👋 Sessão restaurada — ${savedUser.nome.split(' ').slice(0,2).join(' ')}`);
+    setTimeout(() => { renderCalendar(); renderDayContent(); go('agenda'); }, 400);
+  }
+})();
+
+/* ════════════════════════════════════════
+   PWA — OFFLINE DETECTION
+════════════════════════════════════════ */
+function updateOnlineStatus() {
+  const banner = document.getElementById('offline-banner');
+  if (!navigator.onLine) {
+    banner.classList.add('show');
+    document.body.classList.add('offline-mode');
+  } else {
+    banner.classList.remove('show');
+    document.body.classList.remove('offline-mode');
+  }
+}
+
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus(); // check on load
+
+/* ════════════════════════════════════════
+   PWA — SERVICE WORKER REGISTRATION
+════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('OptiAgenda SW registrado:', reg.scope);
+        // Notify user when new version is available
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              toast('🔄 Nova versão disponível — recarregue para atualizar');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('OptiAgenda SW falhou:', err));
+  });
+}
+
+/* ════════════════════════════════════════
+   PWA — INSTALL PROMPT (A2HS)
+════════════════════════════════════════ */
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.classList.add('visible');
+});
+
+function pwaTriggerInstall() {
+  if (!_deferredInstallPrompt) {
+    toast('ℹ️ Use o menu do navegador para instalar o app');
+    return;
+  }
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      toast('✅ OptiAgenda instalado com sucesso!');
+      const btn = document.getElementById('pwa-install-btn');
+      if (btn) btn.classList.remove('visible');
+    }
+    _deferredInstallPrompt = null;
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  toast('🎉 App instalado na tela inicial!');
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.classList.remove('visible');
+  _deferredInstallPrompt = null;
+});
+
+window.pwaTriggerInstall = pwaTriggerInstall;
 </script>
 </body>
 </html>
