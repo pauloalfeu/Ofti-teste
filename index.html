@@ -14,11 +14,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OptiAgenda">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <!-- ══ PWA: Favicons ══ -->
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon-192.png">
 
 <!-- ══ SEO / Social ══ -->
 <meta name="description" content="Agenda cirúrgica e ambulatorial para oftalmologistas — organize pacientes, cirurgias e consultas com facilidade.">
@@ -2305,7 +2305,7 @@ updateOnlineStatus(); // check on load
 ════════════════════════════════════════ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('/Ofti-teste/sw.js', { scope: '/Ofti-teste/' })
       .then(reg => {
         console.log('OptiAgenda SW registrado:', reg.scope);
         // Notify user when new version is available

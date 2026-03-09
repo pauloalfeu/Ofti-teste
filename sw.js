@@ -1,34 +1,31 @@
 /* ════════════════════════════════════════
    OptiAgenda — Service Worker
-   Strategy: Cache-first for static assets,
-   Network-first for navigation / data
+   Configurado para: pauloalfeu.github.io/Ofti-teste/
 ════════════════════════════════════════ */
 
-const CACHE_NAME = 'optiagenda-v1';
-const OFFLINE_URL = 'offline.html';
+const CACHE_NAME = 'optiagenda-v2';
+const BASE = '/Ofti-teste';
+const OFFLINE_URL = BASE + '/offline.html';
 
-// Assets to pre-cache on install
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  // External fonts — cached on first fetch
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/offline.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
 ];
 
-// ── INSTALL: pre-cache shell ──────────────
+// ── INSTALL ──────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      // Cache offline page and icons; ignore failures for external resources
       return cache.addAll([OFFLINE_URL]).catch(() => {});
     }).then(() => self.skipWaiting())
   );
 });
 
-// ── ACTIVATE: clean old caches ────────────
+// ── ACTIVATE ─────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -39,31 +36,28 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── FETCH: smart strategy ─────────────────
+// ── FETCH ─────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and cross-origin requests (except Google Fonts)
   if (request.method !== 'GET') return;
 
   // Google Fonts — cache-first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(cacheFirst(request, 'optiagenda-fonts-v1'));
+    event.respondWith(cacheFirst(request, 'optiagenda-fonts-v2'));
     return;
   }
 
-  // Same-origin HTML (navigation) — network-first with offline fallback
+  // HTML navigation — network-first with offline fallback
   if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
     event.respondWith(networkFirstWithOfflineFallback(request));
     return;
   }
 
-  // Everything else (JS, CSS, images) — cache-first
+  // Everything else — cache-first
   event.respondWith(cacheFirst(request, CACHE_NAME));
 });
-
-/* ── Strategies ── */
 
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
@@ -87,7 +81,6 @@ async function networkFirstWithOfflineFallback(request) {
   } catch {
     const cached = await cache.match(request);
     if (cached) return cached;
-    // Serve offline page
     const offlinePage = await cache.match(OFFLINE_URL);
     return offlinePage || new Response('<h1>Offline</h1>', { headers: { 'Content-Type': 'text/html' } });
   }
